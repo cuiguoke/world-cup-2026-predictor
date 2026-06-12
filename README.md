@@ -31,7 +31,7 @@ macOS 用户也可以双击 `start.command`，Windows 用户可以运行 `start.
 
 ## 项目协作规则
 
-本项目按 SDD 方式推进：先设计和讨论，再形成文档，最后进行实现。详细规则见 `PROJECT_RULES.md`。
+本项目按 SDD 方式推进：先设计和讨论，再形成文档，最后进行实现。详细规则见 `PROJECT_RULES.md`，本地开发和分支流程见 `DEVELOPMENT.md`。
 
 网页 MVP 当前已实现：
 
@@ -190,6 +190,7 @@ python3 visualize_predictions.py \
 
 如果要继续迭代这个项目，请先阅读 `PROJECT_RULES.md` 和 `specs/` 目录：
 
+- `CHANGELOG.md`：项目当前状态和版本更新记录。
 - `specs/PRODUCT_SPEC.md`：产品定位和 MVP 范围。
 - `specs/UX_SPEC.md`：本地网页体验。
 - `specs/AI_SPEC.md`：LLM 参与方式。

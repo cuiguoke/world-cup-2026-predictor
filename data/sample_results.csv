@@ -1,0 +1,25 @@
+date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
+2018-06-15,Portugal,Spain,3,3,FIFA World Cup,Sochi,Russia,true
+2018-07-15,France,Croatia,4,2,FIFA World Cup,Moscow,Russia,true
+2021-07-11,Argentina,Brazil,1,0,Copa América,Rio de Janeiro,Brazil,false
+2021-07-11,England,Italy,1,1,UEFA Euro,London,England,false
+2022-11-23,Germany,Japan,1,2,FIFA World Cup,Doha,Qatar,true
+2022-12-09,Netherlands,Argentina,2,2,FIFA World Cup,Lusail,Qatar,true
+2022-12-10,England,France,1,2,FIFA World Cup,Al Khor,Qatar,true
+2022-12-18,Argentina,France,3,3,FIFA World Cup,Lusail,Qatar,true
+2023-09-12,Spain,Cyprus,6,0,UEFA Euro qualification,Granada,Spain,false
+2023-10-12,Spain,Scotland,2,0,UEFA Euro qualification,Seville,Spain,false
+2023-11-21,Brazil,Argentina,0,1,FIFA World Cup qualification,Rio de Janeiro,Brazil,false
+2024-03-23,England,Brazil,0,1,Friendly,London,England,false
+2024-06-14,Germany,Scotland,5,1,UEFA Euro,Munich,Germany,false
+2024-06-15,Spain,Croatia,3,0,UEFA Euro,Berlin,Germany,true
+2024-06-16,Netherlands,Poland,2,1,UEFA Euro,Hamburg,Germany,true
+2024-06-17,Belgium,Slovakia,0,1,UEFA Euro,Frankfurt,Germany,true
+2024-06-20,Argentina,Canada,2,0,Copa América,Atlanta,United States,true
+2024-07-14,Spain,England,2,1,UEFA Euro,Berlin,Germany,true
+2024-07-14,Argentina,Colombia,1,0,Copa América,Miami,United States,true
+2025-03-21,Japan,Saudi Arabia,2,0,FIFA World Cup qualification,Saitama,Japan,false
+2025-03-22,Morocco,Tunisia,1,0,Friendly,Rabat,Morocco,false
+2025-06-08,Portugal,Croatia,2,1,Friendly,Lisbon,Portugal,false
+2025-09-09,United States,Mexico,1,1,Friendly,Dallas,United States,false
+2025-10-12,Canada,Australia,2,1,Friendly,Toronto,Canada,false

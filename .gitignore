@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Local runtime state. May contain user-entered scores, sources, reports, or API-derived data.
+app_data/

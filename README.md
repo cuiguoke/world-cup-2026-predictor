@@ -1,5 +1,10 @@
 # 2026 世界杯夺冠预测
 
+这是一个本地运行的 2026 世界杯预测与赛程信息应用。
+
+- 未配置 LLM 时：应用根据完整国际比赛历史数据、正式分组、公开可信赛程/赛果数据、已录入比分和本地统计模型生成预测，并提供近期赛程和已完赛结果浏览。
+- 配置 LLM 后：应用升级为 AI 辅助预测助手，支持球队介绍、比赛进程更新、场外资讯关注、AI 信息因子提取与解释报告等能力。
+
 以下是预测的大致流程：
 
 1. 读取男子国家队历史比赛结果。
@@ -24,6 +29,10 @@ http://127.0.0.1:8765
 
 macOS 用户也可以双击 `start.command`，Windows 用户可以运行 `start.bat`。
 
+## 项目协作规则
+
+本项目按 SDD 方式推进：先设计和讨论，再形成文档，最后进行实现。详细规则见 `PROJECT_RULES.md`。
+
 网页 MVP 当前已实现：
 
 - 本地网页服务。
@@ -39,7 +48,7 @@ macOS 用户也可以双击 `start.command`，Windows 用户可以运行 `start.
 - AI 预测报告生成与 HTML 导出。
 - 基础 API：`/api/status`、`/api/groups`、`/api/matches`、`/api/predict`、`/api/llm/test`、`/api/sources`、`/api/factors`、`/api/report/generate`。
 
-核心 MVP 阶段已经完成。后续可以进入网页体验统一调整和真实数据接入。
+核心 MVP 阶段已经完成。后续迭代以 `specs/TODO.md` 中记录的产品能力为准。
 
 LLM 配置说明：
 
@@ -106,7 +115,7 @@ data/groups_2026.json
 
 仓库里的 `data/groups_2026.json` 已按 2026 年世界杯正式分组填写。后续如果 FIFA 赛程或队名写法有更新，只需要改这个 JSON 文件，不需要改模拟代码。
 
-## 运行烟测
+## 命令行预测
 
 ```bash
 python3 worldcup_ai_repro.py \
@@ -131,7 +140,7 @@ python3 worldcup_ai_repro.py \
   --meta-output ../../outputs/worldcup_2026_meta.json
 ```
 
-## 生成图形化结果
+## 命令行生成图形化结果
 
 `worldcup_ai_repro.py` 输出的 CSV 适合后续分析，但 `sf`、`qf`、`r16`、`r32` 这些字段对普通读者不够友好。可以用 `visualize_predictions.py` 把预测结果转换成 HTML 报告页：
 
@@ -171,18 +180,19 @@ python3 visualize_predictions.py \
 
 ## 局限与后续改进
 
-32 强淘汰赛使用了公开签位结构，并用确定性的贪心方式分配成绩最好的小组第三名。如果你想更严格地复现官方竞赛操作，可以替换为 FIFA 官方的小组第三名分配表。
+32 强淘汰赛使用了公开签位结构，并用确定性的贪心方式分配成绩最好的小组第三名。如果要更贴近官方竞赛操作，可以替换为 FIFA 官方的小组第三名分配表。
 
 这个模型也没有纳入伤病、最终名单、休息天数、旅途消耗、战术克制、博彩公司赔率或球员级别实力。
 
 这是有意保留的简洁基线版本。先把基线跑通，再逐步加入这些因素，才更容易判断每一次升级到底改善了什么。
 
-## MVP 产品规格
+## 项目规格
 
-如果要把这个脚本升级成面向普通用户的本地 AI 预测网页应用，请先阅读 `specs/` 目录：
+如果要继续迭代这个项目，请先阅读 `PROJECT_RULES.md` 和 `specs/` 目录：
 
 - `specs/PRODUCT_SPEC.md`：产品定位和 MVP 范围。
 - `specs/UX_SPEC.md`：本地网页体验。
 - `specs/AI_SPEC.md`：LLM 参与方式。
 - `specs/DATA_SPEC.md`：本地数据结构。
 - `specs/IMPLEMENTATION_PLAN.md`：实现阶段和验收标准。
+- `specs/TODO.md`：后续产品迭代清单。

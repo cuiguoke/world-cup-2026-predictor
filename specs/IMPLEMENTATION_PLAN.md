@@ -146,7 +146,7 @@ POST /api/reports/export
 
 ## 6. 预测引擎改造
 
-当前 `worldcup_ai_repro.py` 是命令行脚本。MVP 实现时建议拆成：
+当前 `worldcup_simulator.py` 是命令行脚本。MVP 实现时建议拆成：
 
 ```text
 prediction/
@@ -159,7 +159,7 @@ prediction/
 保留 CLI：
 
 ```text
-worldcup_ai_repro.py
+worldcup_simulator.py
 ```
 
 网页后端直接调用 Python 函数，而不是 shell 调命令。

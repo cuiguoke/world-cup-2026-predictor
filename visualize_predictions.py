@@ -311,7 +311,7 @@ def run(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=Path, required=True, help="Prediction CSV from worldcup_ai_repro.py")
+    parser.add_argument("--input", type=Path, required=True, help="Prediction CSV from worldcup_simulator.py")
     parser.add_argument("--output", type=Path, required=True, help="Output .svg or .html path")
     parser.add_argument("--top", type=int, default=16, help="Number of teams to show")
     parser.add_argument("--title", default="2026 世界杯预测概率")

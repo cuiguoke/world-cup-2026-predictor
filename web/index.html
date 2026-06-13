@@ -16,6 +16,11 @@
       <div class="status-pills" aria-label="应用状态">
         <span class="pill" id="groupStatus">分组加载中</span>
         <span class="pill muted" id="llmStatus">LLM 未配置</span>
+        <a class="icon-link" href="https://github.com/cuiguoke/world-cup-2026-predictor" target="_blank" rel="noreferrer" aria-label="GitHub 项目地址">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 .5A11.5 11.5 0 0 0 8.36 22.9c.58.1.79-.25.79-.56v-2.1c-3.22.7-3.9-1.38-3.9-1.38-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.7.08-.7 1.17.08 1.8 1.2 1.8 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.4-1.27.74-1.56-2.57-.29-5.27-1.28-5.27-5.72 0-1.26.45-2.3 1.2-3.1-.12-.3-.52-1.48.12-3.07 0 0 .98-.31 3.2 1.19A11.1 11.1 0 0 1 12 5.97c.99 0 1.98.13 2.91.39 2.22-1.5 3.2-1.19 3.2-1.19.64 1.59.24 2.77.12 3.07.75.8 1.2 1.84 1.2 3.1 0 4.45-2.7 5.43-5.28 5.72.42.36.8 1.08.8 2.17v3.21c0 .31.2.67.8.56A11.5 11.5 0 0 0 12 .5Z"></path>
+          </svg>
+        </a>
       </div>
     </header>
 
@@ -40,9 +45,11 @@
     </section>
 
     <nav class="tabs" aria-label="页面导航">
-      <button class="tab active" data-tab="overview">夺冠预测</button>
-      <button class="tab" data-tab="groups">正式分组</button>
-      <button class="tab" data-tab="scores">比分录入</button>
+      <button class="tab active" data-tab="overview">赛前夺冠预测</button>
+      <button class="tab" data-tab="group-prediction">分组与出线</button>
+      <button class="tab" data-tab="knockout-prediction">淘汰赛预测</button>
+      <button class="tab" data-tab="schedule">赛事进程</button>
+      <button class="tab" data-tab="scores" data-requires-score-input>比分录入</button>
       <button class="tab" data-tab="sources">AI 信息源</button>
       <button class="tab" data-tab="report">导出报告</button>
       <button class="tab" data-tab="settings">设置</button>
@@ -52,7 +59,7 @@
       <div class="section-heading">
         <div>
           <h2>赛前夺冠预测</h2>
-          <p>录入已结束比分、提取 AI 信息源因素后，点击重新预测。LLM 提取的因素会以小幅模型调整参与模拟。</p>
+          <p>聚焦冠军和决赛席位。录入比分或提取 AI 信息源因素后，点击重新预测，三类预测页面会共享同一次模拟结果。</p>
         </div>
         <div class="prediction-controls">
           <label>
@@ -70,35 +77,118 @@
           <div class="ranking-list" id="rankingList"></div>
         </section>
         <section>
-          <h3>阶段概率</h3>
+          <h3>冠军与决赛概率</h3>
           <div class="stage-table-wrap">
-            <table class="stage-table">
+            <table class="stage-table compact-stage-table">
               <thead>
                 <tr>
                   <th>球队</th>
                   <th>夺冠</th>
                   <th>进决赛</th>
-                  <th>进四强</th>
-                  <th>进八强</th>
-                  <th>进16强</th>
-                  <th>进32强</th>
                 </tr>
               </thead>
-              <tbody id="stageTable"></tbody>
+              <tbody id="finalTable"></tbody>
             </table>
           </div>
         </section>
       </div>
     </section>
 
-    <section class="tab-panel" id="groups">
+    <section class="tab-panel" id="group-prediction">
       <div class="section-heading">
         <div>
-          <h2>2026 正式分组</h2>
-          <p>分组来自本地 <code>data/groups_2026.json</code>，后续可以在网页中编辑。</p>
+          <h2>分组与出线</h2>
+          <p>预测前显示正式分组；重新预测后，同一组卡片会切换为头名、前二、第三名和晋级 32 强概率。</p>
         </div>
       </div>
-      <div class="groups-grid" id="groupsGrid" aria-live="polite"></div>
+      <section class="qualification-section">
+        <div class="qualification-grid" id="qualificationGrid">
+          <div class="mini-empty">生成预测后显示每个小组的头名、前二和晋级 32 强概率。</div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="knockout-prediction">
+      <div class="section-heading">
+        <div>
+          <h2>淘汰赛预测</h2>
+          <p>先看热门球队阶段概率，再按 32 强、16 强和深轮次候选进一步展开。</p>
+        </div>
+      </div>
+      <div class="subtabs" aria-label="淘汰赛预测子页面">
+        <button class="subtab active" type="button" data-knockout-view="overview">热门球队阶段概率</button>
+        <button class="subtab" type="button" data-knockout-view="r32">32 强候选</button>
+        <button class="subtab" type="button" data-knockout-view="r16">16 强候选</button>
+        <button class="subtab" type="button" data-knockout-view="deep">深轮次候选</button>
+      </div>
+      <section class="knockout-view active" id="knockoutViewOverview" data-knockout-panel="overview">
+        <h3>热门球队阶段概率</h3>
+        <div class="stage-table-wrap">
+          <table class="stage-table">
+            <thead>
+              <tr>
+                <th>球队</th>
+                <th>夺冠</th>
+                <th>进决赛</th>
+                <th>进四强</th>
+                <th>进八强</th>
+                <th>进16强</th>
+                <th>进32强</th>
+              </tr>
+            </thead>
+            <tbody id="knockoutStageTable"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="knockout-view" id="knockoutViewR32" data-knockout-panel="r32">
+        <h3>32 强候选</h3>
+        <div class="stage-card-grid single" id="knockoutR32Grid">
+          <div class="mini-empty">生成预测后显示 32 个进入 32 强概率最高的候选。</div>
+        </div>
+      </section>
+      <section class="knockout-view" id="knockoutViewR16" data-knockout-panel="r16">
+        <h3>16 强候选</h3>
+        <div class="stage-card-grid single" id="knockoutR16Grid">
+          <div class="mini-empty">生成预测后显示 16 个进入 16 强概率最高的候选。</div>
+        </div>
+      </section>
+      <section class="knockout-view" id="knockoutViewDeep" data-knockout-panel="deep">
+        <h3>深轮次候选</h3>
+        <div class="stage-card-grid" id="knockoutDeepGrid">
+          <div class="mini-empty">生成预测后显示八强、四强和决赛候选。</div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="schedule">
+      <div class="section-heading">
+        <div>
+          <h2>赛事进程</h2>
+          <p>查看从小组赛到决赛的完整赛事进程。小组赛显示球队，淘汰赛在球队确定前显示签位和胜者路径。</p>
+        </div>
+        <div class="schedule-filters" aria-label="赛程筛选">
+          <label>
+            <span>阶段/小组</span>
+            <select id="scheduleStageFilter">
+              <option value="all">全部赛程</option>
+            </select>
+          </label>
+          <label>
+            <span>状态</span>
+            <select id="scheduleStatusFilter">
+              <option value="all">全部比赛</option>
+              <option value="scheduled">未开始</option>
+              <option value="finished">已结束</option>
+            </select>
+          </label>
+          <div class="view-toggle" aria-label="赛程视图">
+            <button class="view-button" type="button" data-schedule-view="bracket">淘汰赛树</button>
+            <button class="view-button active" type="button" data-schedule-view="list">列表</button>
+          </div>
+        </div>
+      </div>
+      <div class="schedule-summary" id="scheduleSummary">正在读取赛程。</div>
+      <div class="schedule-list" id="scheduleList" aria-live="polite"></div>
     </section>
 
     <section class="tab-panel" id="scores">
@@ -107,7 +197,7 @@
           <h2>比分录入</h2>
           <p>输入已经结束的比赛比分。未填写的比赛会由模型继续模拟。</p>
         </div>
-        <div class="actions compact">
+        <div class="actions compact" data-requires-score-input>
           <button class="ghost" id="clearScoresButton">清空比分</button>
           <button class="primary" id="saveScoresButton">保存比分</button>
         </div>

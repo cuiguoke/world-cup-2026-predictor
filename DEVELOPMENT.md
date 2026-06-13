@@ -49,7 +49,7 @@ dev       -> main
 合并到 `main` 前至少运行：
 
 ```bash
-python3 -m py_compile app.py worldcup_ai_repro.py visualize_predictions.py
+python3 -m py_compile app.py worldcup_simulator.py visualize_predictions.py
 node --check web/app.js
 git status --short
 ```
@@ -94,7 +94,7 @@ git status --short
 推荐命令：
 
 ```bash
-zip -r ../../outputs/worldcup_ai_repro.zip . \
+zip -r ../../outputs/worldcup_simulator.zip . \
   -x '__pycache__/*' 'app_data/*' '.git/*' '.git' '.DS_Store'
 ```
 

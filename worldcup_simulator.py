@@ -398,10 +398,11 @@ def simulate_tournament(
     host_boost: float,
     goal_elo_scale: float,
     fixed_group_scores: dict[str, dict[tuple[str, str], tuple[int, int]]] | None = None,
-) -> dict[str, str | list[str]]:
+) -> dict[str, object]:
     """模拟一整届世界杯，返回每个阶段还留在赛事中的球队列表。"""
     fixed_group_scores = fixed_group_scores or {}
     positions: dict[str, str] = {}
+    group_tables: dict[str, list[dict[str, object]]] = {}
     third_rows: list[tuple[str, dict[str, object]]] = []
     for group, teams in groups.items():
         table = group_table(
@@ -413,6 +414,7 @@ def simulate_tournament(
             goal_elo_scale,
             fixed_scores=fixed_group_scores.get(group),
         )
+        group_tables[group] = table
         positions[f"1{group}"] = str(table[0]["team"])
         positions[f"2{group}"] = str(table[1]["team"])
         third_rows.append((group, table[2]))
@@ -429,6 +431,19 @@ def simulate_tournament(
     )
     # 12 个小组第三中，成绩最好的 8 支进入 32 强。
     thirds = {group: str(row["team"]) for group, row in third_rows[:8]}
+    third_qualifier_groups = set(thirds)
+
+    group_rankings = {
+        group: [
+            {
+                "team": str(row["team"]),
+                "rank": index,
+                "qualified": index <= 2 or (index == 3 and group in third_qualifier_groups),
+            }
+            for index, row in enumerate(table, start=1)
+        ]
+        for group, table in group_tables.items()
+    }
 
     used_thirds: set[str] = set()
     r32_matches = [
@@ -454,6 +469,7 @@ def simulate_tournament(
         ]
         stages[round_name] = next_winners
         winners = next_winners
+    stages["group_rankings"] = group_rankings
     return stages
 
 

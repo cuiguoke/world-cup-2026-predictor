@@ -124,7 +124,17 @@ Web App 的预测服务。它连接运行时状态和底层模型：
 - 调用 `worldcup_simulator.py` 构建 Elo 和模拟赛事。
 - 应用 AI 影响因子的 Elo 微调。
 - 汇总夺冠概率、阶段概率和小组出线概率。
+- 成功预测后调用 `services/snapshots.py` 保存当前预测快照。
 - 返回已中文本地化的预测结果。
+
+### `services/snapshots.py`
+
+负责预测快照持久化：
+
+- 将每次成功预测写入带模型版本的快照文件，例如 `app_data/snapshots/20260615T143041117683-v1.json`；当前模型版本为 `v1`。
+- 快照文件用独立 JSON 保存，已保存内容不再修改。
+- 按 `SNAPSHOT_MAX_FILES` 和 `SNAPSHOT_MAX_TOTAL_MB` 清理最旧快照，避免本地磁盘无限增长。
+- 提供快照列表和单个快照读取能力，为后续预测复盘页面提供数据。
 
 ### `services/report.py`
 
@@ -176,6 +186,7 @@ web/
 - `matches.json`：用户本地覆盖比分，只保存可编辑的手动录入结果；官方确认赛果来自 `data/match_schedule_2026.json`。
 - `sources.json`：用户添加的信息源。
 - `factors.json`：AI 提取后的影响因子。
+- `snapshots/`：每次成功重新预测后保存的不可变预测快照，文件名包含模型版本，例如 `20260615T143041117683-v1.json`；默认保留最近 200 个且总占用不超过 50 MB，超过后删除最旧快照。
 - `reports/`：导出的 HTML 报告。
 
 ## 调用链

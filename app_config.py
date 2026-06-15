@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 
 
+def env_int(name: str, default: int, minimum: int) -> int:
+    try:
+        return max(minimum, int(float(os.environ.get(name, str(default)))))
+    except ValueError:
+        return default
+
+
 ROOT = Path(__file__).resolve().parent
 WEB_ROOT = ROOT / "web"
 DATA_ROOT = ROOT / "data"
@@ -13,6 +20,7 @@ MATCHES_PATH = APP_DATA_ROOT / "matches.json"
 SOURCES_PATH = APP_DATA_ROOT / "sources.json"
 FACTORS_PATH = APP_DATA_ROOT / "factors.json"
 REPORTS_ROOT = APP_DATA_ROOT / "reports"
+SNAPSHOTS_ROOT = APP_DATA_ROOT / "snapshots"
 SAMPLE_RESULTS_PATH = DATA_ROOT / "sample_results.csv"
 FULL_RESULTS_PATH = DATA_ROOT / "results.csv"
 
@@ -20,6 +28,10 @@ APP_MODE = os.environ.get("APP_MODE", "local").strip().lower()
 if APP_MODE not in {"local", "hosted"}:
     APP_MODE = "local"
 ALLOW_USER_SCORE_INPUT = APP_MODE == "local"
+
+PREDICTION_MODEL_VERSION = "v1"
+SNAPSHOT_MAX_FILES = env_int("SNAPSHOT_MAX_FILES", 200, 1)
+SNAPSHOT_MAX_TOTAL_BYTES = env_int("SNAPSHOT_MAX_TOTAL_MB", 50, 1) * 1024 * 1024
 
 GROUP_PAIRINGS = [(0, 1), (2, 3), (0, 2), (3, 1), (3, 0), (1, 2)]
 

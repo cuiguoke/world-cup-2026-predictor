@@ -357,6 +357,32 @@ p {
   background: #fff;
 }
 
+.review-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.review-controls label {
+  display: grid;
+  min-width: 310px;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.review-controls select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: var(--text);
+  background: #fff;
+}
+
 .view-toggle {
   display: inline-flex;
   align-items: center;
@@ -694,6 +720,29 @@ code {
   white-space: nowrap;
 }
 
+.schedule-prediction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.schedule-prediction span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.schedule-prediction span:last-child {
+  flex: 0 0 auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .results-layout {
   display: grid;
   grid-template-columns: 380px minmax(0, 1fr);
@@ -999,6 +1048,83 @@ code {
 
 .stage-table tbody tr:hover td {
   background: #fbfdfc;
+}
+
+.review-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.review-summary article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.review-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.review-summary strong {
+  display: block;
+  min-width: 0;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+}
+
+.review-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.review-table td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.review-table tr.muted td {
+  color: var(--muted);
+  background: #fbfbfa;
+}
+
+.review-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #cfe1dc;
+  border-radius: 999px;
+  background: #f5fbf8;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-subtle);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .score-list {
@@ -1348,8 +1474,29 @@ code {
     min-width: min(100%, 220px);
   }
 
+  .review-controls {
+    justify-content: stretch;
+  }
+
+  .review-controls label {
+    min-width: min(100%, 260px);
+  }
+
+  .review-summary {
+    grid-template-columns: 1fr;
+  }
+
   .schedule-status {
     align-items: flex-start;
+  }
+
+  .schedule-prediction {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .schedule-prediction span:last-child {
+    white-space: normal;
   }
 
   .schedule-list.bracket-mode {

@@ -33,6 +33,11 @@ from services.llm import llm_status, public_llm_config, test_llm_connection
 from services.prediction import run_prediction
 from services.report import generate_report
 from services.schedule import load_or_create_matches, save_user_match_overrides
+from services.snapshots import (
+    build_snapshot_review,
+    list_prediction_snapshots,
+    load_prediction_snapshot,
+)
 from services.sources import (
     create_source,
     delete_source,
@@ -119,6 +124,28 @@ class AppHandler(BaseHTTPRequestHandler):
 
         if path == "/api/matches":
             self.send_json({"matches": localize_matches(load_or_create_matches())})
+            return
+
+        if path == "/api/snapshots":
+            self.send_json({"snapshots": list_prediction_snapshots()})
+            return
+
+        if path.startswith("/api/snapshots/") and path.endswith("/review"):
+            snapshot_id = path.removeprefix("/api/snapshots/").removesuffix("/review")
+            try:
+                self.send_json(
+                    {"review": build_snapshot_review(snapshot_id, load_or_create_matches())}
+                )
+            except (FileNotFoundError, ValueError):
+                self.send_json({"error": "snapshot not found"}, HTTPStatus.NOT_FOUND)
+            return
+
+        if path.startswith("/api/snapshots/"):
+            snapshot_id = path.removeprefix("/api/snapshots/")
+            try:
+                self.send_json({"snapshot": load_prediction_snapshot(snapshot_id)})
+            except (FileNotFoundError, ValueError):
+                self.send_json({"error": "snapshot not found"}, HTTPStatus.NOT_FOUND)
             return
 
         if path == "/api/llm/config":

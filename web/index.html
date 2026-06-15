@@ -49,6 +49,7 @@
       <button class="tab" data-tab="group-prediction">分组与出线</button>
       <button class="tab" data-tab="knockout-prediction">淘汰赛预测</button>
       <button class="tab" data-tab="schedule">赛事进程</button>
+      <button class="tab" data-tab="review">预测复盘</button>
       <button class="tab" data-tab="scores" data-requires-score-input>比分录入</button>
       <button class="tab" data-tab="sources">AI 信息源</button>
       <button class="tab" data-tab="report">导出报告</button>
@@ -203,6 +204,42 @@
         </div>
       </div>
       <div class="score-grid" id="scoreGrid" aria-live="polite"></div>
+    </section>
+
+    <section class="tab-panel" id="review">
+      <div class="section-heading">
+        <div>
+          <h2>预测复盘</h2>
+          <p>选择一次历史预测快照，对比当前已确认赛果。赛果未定时生成的是赛前预测；赛果已定后生成的是赛后复盘，两者分开标记但都参与模型复盘。</p>
+        </div>
+        <div class="review-controls">
+          <label>
+            <span>预测快照</span>
+            <select id="snapshotSelect">
+              <option value="">暂无快照</option>
+            </select>
+          </label>
+          <button class="ghost" id="refreshSnapshotsButton">刷新快照</button>
+        </div>
+      </div>
+      <div class="review-summary" id="reviewSummary">
+        <div class="mini-empty">生成预测后会保存快照；选择快照后显示复盘结果。</div>
+      </div>
+      <div class="stage-table-wrap">
+        <table class="stage-table review-table">
+          <thead>
+            <tr>
+              <th>比赛</th>
+              <th>类型</th>
+              <th>快照预测</th>
+              <th>实际比分</th>
+              <th>真实赛果概率</th>
+              <th>复盘</th>
+            </tr>
+          </thead>
+          <tbody id="reviewTable"></tbody>
+        </table>
+      </div>
     </section>
 
     <section class="tab-panel" id="sources">

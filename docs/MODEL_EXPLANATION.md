@@ -419,6 +419,32 @@ def simulate_score(team_a, team_b, ratings, base_goals, rng, host_boost, goal_el
     return poisson_sample(lam_a, rng), poisson_sample(lam_b, rng)
 ```
 
+### 4.5 单场预测聚合
+
+赛事模拟中的 `simulate_score` 是一次随机抽样。为了支持后续预测复盘，当前模型另有单场预测聚合函数，会枚举有限比分范围并计算：
+
+- 主胜、平局、客胜概率。
+- 双方期望进球。
+- 最可能比分 Top N，用作后续复盘参考，不适合作为单场预测的主结论。
+
+伪代码：
+
+```python
+lambda_a, lambda_b = score_lambdas(team_a, team_b, ratings, base_goals, host_boost, scale)
+
+for goals_a in range(0, max_goals + 1):
+    for goals_b in range(0, max_goals + 1):
+        probability = poisson_pmf(lambda_a, goals_a) * poisson_pmf(lambda_b, goals_b)
+        if goals_a > goals_b:
+            home_win += probability
+        elif goals_a < goals_b:
+            away_win += probability
+        else:
+            draw += probability
+```
+
+当前 Web 预测结果会为小组赛 72 场已知对阵输出 `matchPredictions`，每项包含 `home_win`、`draw`、`away_win`、`expected_home_goals`、`expected_away_goals` 和 `top_scorelines`。赛事进程页面优先展示胜平负概率和期望进球，避免把单一最可能比分误读成确定预测。淘汰赛在球队未确定前暂不生成单场预测。
+
 ## 5. 小组赛模拟
 
 每个小组有 4 支球队，进行单循环。每场比赛得到比分后，按足球规则累计：

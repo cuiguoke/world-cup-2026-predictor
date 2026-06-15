@@ -216,6 +216,14 @@ def poisson_sample(lam: float, rng: random.Random) -> int:
     return k - 1
 
 
+def poisson_probability(lam: float, goals: int) -> float:
+    """返回 Poisson(lam) 取到指定进球数的概率。"""
+    lam = max(0.05, min(lam, 5.5))
+    if goals < 0:
+        return 0.0
+    return math.exp(-lam) * (lam**goals) / math.factorial(goals)
+
+
 def score_lambdas(
     team_a: str,
     team_b: str,
@@ -240,6 +248,66 @@ def score_lambdas(
         base_goals * math.exp(diff / goal_elo_scale),
         base_goals * math.exp(-diff / goal_elo_scale),
     )
+
+
+def predict_match_scoreline(
+    team_a: str,
+    team_b: str,
+    ratings: dict[str, float],
+    base_goals: float,
+    *,
+    host_boost: float,
+    goal_elo_scale: float,
+    max_goals: int = 8,
+    top_n: int = 5,
+) -> dict[str, object]:
+    """用 Poisson 分布聚合单场胜平负概率和最可能比分。"""
+    lam_a, lam_b = score_lambdas(
+        team_a, team_b, ratings, base_goals, host_boost, goal_elo_scale
+    )
+    home_win = 0.0
+    draw = 0.0
+    away_win = 0.0
+    scorelines: list[dict[str, object]] = []
+
+    for goals_a in range(max_goals + 1):
+        prob_a = poisson_probability(lam_a, goals_a)
+        for goals_b in range(max_goals + 1):
+            probability = prob_a * poisson_probability(lam_b, goals_b)
+            if goals_a > goals_b:
+                home_win += probability
+            elif goals_a < goals_b:
+                away_win += probability
+            else:
+                draw += probability
+            scorelines.append(
+                {
+                    "home_score": goals_a,
+                    "away_score": goals_b,
+                    "probability": probability,
+                }
+            )
+
+    total = home_win + draw + away_win
+    if total > 0:
+        home_win /= total
+        draw /= total
+        away_win /= total
+        for scoreline in scorelines:
+            scoreline["probability"] = float(scoreline["probability"]) / total
+
+    return {
+        "home_win": home_win,
+        "draw": draw,
+        "away_win": away_win,
+        "expected_home_goals": lam_a,
+        "expected_away_goals": lam_b,
+        "top_scorelines": sorted(
+            scorelines,
+            key=lambda item: float(item["probability"]),
+            reverse=True,
+        )[:top_n],
+    }
 
 
 def simulate_score(

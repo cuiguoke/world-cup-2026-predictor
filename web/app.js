@@ -5,6 +5,9 @@ const state = {
   prediction: null,
   sources: [],
   factors: [],
+  snapshots: [],
+  selectedSnapshotId: "",
+  review: null,
   teamNames: {},
   scheduleView: "list",
 };
@@ -120,6 +123,18 @@ function escapeHtml(value) {
 
 function teamLabel(team) {
   return state.teamNames?.[team] || team || "未知球队";
+}
+
+function formatSnapshotTime(value) {
+  if (!value) return "时间未知";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 async function testLlmConnection(event) {
@@ -535,6 +550,7 @@ function renderSchedule() {
             <span>${isFinished ? `${scoreSourceLabel(match)}，可参与预测` : isGroup ? scoreSourceLabel(match) : "球队待定，赛程路径已确定"}</span>
             ${isGroup && match.can_edit_score ? `<button class="ghost schedule-score-button" data-tab-target="scores">录入比分</button>` : ""}
           </div>
+          ${renderSchedulePrediction(match)}
         </article>
       `;
     })
@@ -643,6 +659,179 @@ async function clearScores() {
 function formatPct(value) {
   const number = Number(value || 0);
   return number >= 0.1 ? `${(number * 100).toFixed(1)}%` : `${(number * 100).toFixed(2)}%`;
+}
+
+function matchPredictionFor(match) {
+  const predictions = state.prediction?.matchPredictions || [];
+  return predictions.find((item) => String(item.match_id) === String(match.id));
+}
+
+function renderSchedulePrediction(match) {
+  const prediction = matchPredictionFor(match);
+  if (!prediction || match.stage !== "group") return "";
+  const home = escapeHtml(match.home_team_name || teamLabel(match.home_team));
+  const away = escapeHtml(match.away_team_name || teamLabel(match.away_team));
+  const expectedHome = Number(prediction.expected_home_goals || 0).toFixed(2);
+  const expectedAway = Number(prediction.expected_away_goals || 0).toFixed(2);
+  const prefix = match.status === "finished" ? "赛前预测" : "预测";
+  return `
+    <div class="schedule-prediction">
+      <span>${prefix}：${home}胜 ${formatPct(prediction.home_win)} · 平 ${formatPct(prediction.draw)} · ${away}胜 ${formatPct(prediction.away_win)}</span>
+      <span>期望进球 ${expectedHome}-${expectedAway}</span>
+    </div>
+  `;
+}
+
+function renderSnapshotOptions() {
+  const select = $("#snapshotSelect");
+  if (!select) return;
+  if (!state.snapshots.length) {
+    select.innerHTML = `<option value="">暂无快照</option>`;
+    state.selectedSnapshotId = "";
+    return;
+  }
+  if (!state.selectedSnapshotId || !state.snapshots.some((item) => item.snapshot_id === state.selectedSnapshotId)) {
+    state.selectedSnapshotId = state.snapshots[0].snapshot_id;
+  }
+  select.innerHTML = state.snapshots
+    .map((snapshot) => {
+      const label = [
+        formatSnapshotTime(snapshot.created_at),
+        snapshot.model_version || "未知模型",
+        `${snapshot.simulations || "--"} 次`,
+        `已知 ${snapshot.known_scores || 0} 场`,
+      ].join(" · ");
+      return `<option value="${escapeHtml(snapshot.snapshot_id)}">${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  select.value = state.selectedSnapshotId;
+}
+
+function resultName(result, reviewRow) {
+  if (result === "home") return `${reviewRow.home_team_name || teamLabel(reviewRow.home_team)}胜`;
+  if (result === "away") return `${reviewRow.away_team_name || teamLabel(reviewRow.away_team)}胜`;
+  return "平局";
+}
+
+function formatReviewProbability(value) {
+  return value === null || value === undefined ? "--" : formatPct(value);
+}
+
+function renderReview() {
+  renderSnapshotOptions();
+  const summary = $("#reviewSummary");
+  const table = $("#reviewTable");
+  if (!summary || !table) return;
+  const review = state.review;
+  if (!state.snapshots.length) {
+    summary.innerHTML = `<div class="mini-empty">还没有预测快照。点击“重新预测”后会自动保存快照。</div>`;
+    table.innerHTML = "";
+    return;
+  }
+  if (!review) {
+    summary.innerHTML = `<div class="mini-empty">正在读取预测复盘。</div>`;
+    table.innerHTML = "";
+    return;
+  }
+  const data = review.summary || {};
+  const preHitRate = data.pre_result_hit_rate === null || data.pre_result_hit_rate === undefined
+    ? "--"
+    : formatPct(data.pre_result_hit_rate);
+  const postHitRate = data.post_result_hit_rate === null || data.post_result_hit_rate === undefined
+    ? "--"
+    : formatPct(data.post_result_hit_rate);
+  const avgProbability = formatReviewProbability(data.average_actual_probability);
+  const surprise = data.biggest_surprise;
+  const surpriseLabel = surprise
+    ? `${surprise.home_team_name || teamLabel(surprise.home_team)} ${surprise.actual_home_score}-${surprise.actual_away_score} ${surprise.away_team_name || teamLabel(surprise.away_team)}`
+    : "暂无";
+  summary.innerHTML = `
+    <article>
+      <span>已完赛场次</span>
+      <strong>${data.reviewed_matches || 0}</strong>
+      <small>根据实际结果评估模型预测</small>
+    </article>
+    <article>
+      <span>胜负预测命中</span>
+      <strong>${data.top_pick_hits || 0} / ${data.reviewed_matches || 0}</strong>
+      <small>胜负预测是否命中比赛结果</small>
+    </article>
+    <article>
+      <span>预测快照生成时未赛场次</span>
+      <strong>${data.pre_result_hits || 0} / ${data.pre_result_matches || 0}</strong>
+      <small>赛前预测命中率：${preHitRate}</small>
+    </article>
+    <article>
+      <span>预测快照生成时完赛场次</span>
+      <strong>${data.post_result_hits || 0} / ${data.post_result_matches || 0}</strong>
+      <small>赛后复盘命中率：${postHitRate}</small>
+    </article>
+    <article>
+      <span>平均预测准确率</span>
+      <strong>${avgProbability}</strong>
+      <small>实际结果在预测结果中所占几率</small>
+    </article>
+    <article>
+      <span>最大偏差</span>
+      <strong>${escapeHtml(surpriseLabel)}</strong>
+      <small>真实结果与预测结果差异最大的一场</small>
+    </article>
+  `;
+  const rows = review.matches || [];
+  if (!rows.length) {
+    table.innerHTML = `<tr><td colspan="6">当前快照还没有可对比的已完赛比赛。</td></tr>`;
+    return;
+  }
+  table.innerHTML = rows
+    .map((row) => {
+      const home = row.home_team_name || teamLabel(row.home_team);
+      const away = row.away_team_name || teamLabel(row.away_team);
+      const knownNote = row.was_known ? "<small>快照生成时已知赛果</small>" : "";
+      return `
+        <tr>
+          <td>
+            <strong>${escapeHtml(home)} vs ${escapeHtml(away)}</strong>
+            <small>${escapeHtml(row.group || "")} 组 · 第 ${escapeHtml(row.match_number || "")} 场</small>
+            ${knownNote}
+          </td>
+          <td><span class="review-type">${escapeHtml(row.prediction_type_label || "赛前预测")}</span></td>
+          <td>
+            ${escapeHtml(home)}胜 ${formatPct(row.home_win)}<br>
+            平 ${formatPct(row.draw)} · ${escapeHtml(away)}胜 ${formatPct(row.away_win)}
+          </td>
+          <td>${escapeHtml(row.actual_home_score)}-${escapeHtml(row.actual_away_score)}</td>
+          <td>${formatPct(row.actual_probability)}<br><small>${escapeHtml(resultName(row.actual_result, row))}</small></td>
+          <td><span class="review-label">${escapeHtml(row.review_label)}</span></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function loadSnapshots() {
+  const payload = await fetchJson("/api/snapshots");
+  state.snapshots = payload.snapshots || [];
+  renderSnapshotOptions();
+  if (state.selectedSnapshotId) {
+    await loadSnapshotReview(state.selectedSnapshotId);
+  } else {
+    state.review = null;
+    renderReview();
+  }
+}
+
+async function loadSnapshotReview(snapshotId) {
+  if (!snapshotId) {
+    state.review = null;
+    renderReview();
+    return;
+  }
+  state.selectedSnapshotId = snapshotId;
+  state.review = null;
+  renderReview();
+  const payload = await fetchJson(`/api/snapshots/${encodeURIComponent(snapshotId)}/review`);
+  state.review = payload.review;
+  renderReview();
 }
 
 function topRowsForMetric(rows, metric, limit = 4) {
@@ -800,12 +989,16 @@ function renderPrediction() {
     )
     .join("");
 
+  const snapshotLabel = prediction.snapshot?.snapshot_id
+    ? `；已保存预测快照：${prediction.snapshot.snapshot_id}`
+    : "";
   setText(
     "#predictionMeta",
-    `已生成 ${prediction.simulations} 次模拟；已纳入 ${prediction.finishedMatches} 场已结束比分；AI 影响因子：${prediction.aiFactorsApplied || 0} 条；历史数据：${prediction.historySource}`
+    `已生成 ${prediction.simulations} 次模拟；已纳入 ${prediction.finishedMatches} 场已结束比分；AI 影响因子：${prediction.aiFactorsApplied || 0} 条；历史数据：${prediction.historySource}${snapshotLabel}`
   );
   renderKnockoutViews();
   renderQualification();
+  renderSchedule();
 }
 
 function renderQualification() {
@@ -890,6 +1083,7 @@ async function runPrediction() {
     });
     state.prediction = prediction;
     renderPrediction();
+    await loadSnapshots();
   } catch (error) {
     setText("#predictionMeta", `预测失败：${error.message}`);
     activateTab("overview");
@@ -940,12 +1134,13 @@ async function generateReport() {
 
 async function refreshApp() {
   try {
-    const [status, groupsPayload, matchesPayload, sourcesPayload, factorsPayload] = await Promise.all([
+    const [status, groupsPayload, matchesPayload, sourcesPayload, factorsPayload, snapshotsPayload] = await Promise.all([
       fetchJson("/api/status"),
       fetchJson("/api/groups"),
       fetchJson("/api/matches"),
       fetchJson("/api/sources"),
       fetchJson("/api/factors"),
+      fetchJson("/api/snapshots"),
     ]);
     state.status = status;
     state.groups = groupsPayload.groups;
@@ -953,6 +1148,7 @@ async function refreshApp() {
     state.matches = matchesPayload.matches;
     state.sources = sourcesPayload.sources;
     state.factors = factorsPayload.factors;
+    state.snapshots = snapshotsPayload.snapshots || [];
     renderStatus();
     renderScheduleFilters();
     renderMatches();
@@ -960,6 +1156,7 @@ async function refreshApp() {
     renderQualification();
     renderSources();
     renderFactors();
+    renderReview();
   } catch (error) {
     setText("#groupStatus", "本地数据读取失败");
     setText("#dataMode", error.message);
@@ -973,6 +1170,12 @@ function activateTab(id) {
   $$(".tab-panel").forEach((panel) => {
     panel.classList.toggle("active", panel.id === id);
   });
+  if (id === "review") {
+    loadSnapshots().catch((error) => {
+      const summary = $("#reviewSummary");
+      if (summary) summary.innerHTML = `<div class="mini-empty">读取预测快照失败：${escapeHtml(error.message)}</div>`;
+    });
+  }
 }
 
 function setScheduleView(view) {
@@ -1012,6 +1215,18 @@ function bindEvents() {
   $("#saveScoresButton")?.addEventListener("click", saveScores);
   $("#clearScoresButton")?.addEventListener("click", clearScores);
   $("#predictButton")?.addEventListener("click", runPrediction);
+  $("#refreshSnapshotsButton")?.addEventListener("click", () => {
+    loadSnapshots().catch((error) => {
+      const summary = $("#reviewSummary");
+      if (summary) summary.innerHTML = `<div class="mini-empty">刷新快照失败：${escapeHtml(error.message)}</div>`;
+    });
+  });
+  $("#snapshotSelect")?.addEventListener("change", (event) => {
+    loadSnapshotReview(event.target.value).catch((error) => {
+      const summary = $("#reviewSummary");
+      if (summary) summary.innerHTML = `<div class="mini-empty">读取复盘失败：${escapeHtml(error.message)}</div>`;
+    });
+  });
   $("#llmForm")?.addEventListener("submit", testLlmConnection);
   $("#clearLlmButton")?.addEventListener("click", clearLlmConfig);
   $("#sourceForm")?.addEventListener("submit", saveSource);

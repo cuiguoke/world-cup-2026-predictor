@@ -194,7 +194,19 @@ git push origin dev
 - 开发阶段变化：更新 `specs/IMPLEMENTATION_PLAN.md`。
 - 尚未实现的新需求：记录到 `specs/TODO.md`。
 
-## 9. 打包交付规则
+## 9. 数据维护规则
+
+世界杯当前赛果和历史 Elo 数据集必须分开维护：
+
+- 更新已完赛世界杯比分时，修改 `data/match_schedule_2026.json`。
+- 同步更新 README 和 TODO 中的完赛场次数量、示例比分和来源状态。
+- 不要为了逐场更新当前世界杯赛果而修改 `data/results.csv`。
+- `data/results.csv` 只在明确执行“历史数据集版本刷新”时批量更新。
+- 如果确实刷新 `data/results.csv`，必须同时更新 `data/results_source.md`、README 中的数据行数和 `docs/MODEL_EXPLANATION.md` 中关于 Elo 数据来源的说明。
+
+原因：`data/results.csv` 用于构建 Elo 基础实力，`data/match_schedule_2026.json` 用于锁定当前赛事已知赛果。如果同一场比赛同时进入两处，既会影响 Elo，又会作为确定赛果参与模拟，模型解释会变得不清楚。
+
+## 10. 打包交付规则
 
 交付包应从稳定状态生成，优先在 `main` 节点打包。
 
@@ -212,7 +224,7 @@ zip -r ../../outputs/worldcup_simulator.zip . \
 - 不包含 Git 仓库内部目录。
 - 不包含 API Key 或本机临时文件。
 
-## 10. 版本记录
+## 11. 版本记录
 
 后续可新增 `CHANGELOG.md`。每次 `dev -> main` 时记录：
 

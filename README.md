@@ -198,6 +198,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 
 截至当前版本，`data/results.csv` 包含 49,477 行国际比赛结果。应用会优先使用该文件；如果不存在，才回退到 `data/sample_results.csv`。
 
+维护规则：
+
+- `data/results.csv` 是历史 Elo 数据集，不用于逐场维护当前世界杯实时赛果。
+- 更新 2026 世界杯已完赛比分时，只更新 `data/match_schedule_2026.json` 以及相关 README/TODO 状态说明。
+- 不要因为新增一场已完赛世界杯比赛，就把比分追加到 `data/results.csv`。否则同一场比赛既会进入 Elo 底座，又会作为已知赛果参与赛事模拟，模型解释会变得不清楚。
+- 只有在明确执行“历史数据集版本刷新”时，才更新 `data/results.csv`，并同步更新 `data/results_source.md`、README 中的数据行数和模型说明。
+
 ### 世界杯分组
 
 世界杯分组保存在：

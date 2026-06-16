@@ -882,12 +882,72 @@ function renderStageCandidateCard(card) {
   `;
 }
 
+function formatQualifiedGroups(groups) {
+  return String(groups || "")
+    .split("")
+    .filter(Boolean)
+    .join("/");
+}
+
+function renderThirdPlaceAssignmentPanel() {
+  const panel = $("#thirdPlaceAssignmentPanel");
+  if (!panel) return;
+  const rows = state.prediction?.thirdPlaceAssignments || [];
+  if (!rows.length) {
+    panel.innerHTML = `
+      <article class="third-assignment-card">
+        <div>
+          <span class="label">32 强第三名落位</span>
+          <strong>按官方组合表分配</strong>
+        </div>
+        <p>12 个小组第三中成绩最好的 8 个进入 32 强。生成预测后，这里会显示最常见的第三名小组组合及其落位。</p>
+      </article>
+    `;
+    return;
+  }
+
+  const top = rows[0];
+  const assignments = (top.assignments || [])
+    .map((item) => {
+      const matchLabel = item.match_number ? `第 ${escapeHtml(item.match_number)} 场` : "32 强";
+      return `
+        <span class="assignment-chip">
+          ${matchLabel}
+          <b>${escapeHtml(item.winner_slot || "")} vs ${escapeHtml(item.third_slot || "")}</b>
+        </span>
+      `;
+    })
+    .join("");
+  const alternatives = rows
+    .slice(1, 4)
+    .map((item) => `
+      <span>
+        ${escapeHtml(formatQualifiedGroups(item.qualified_groups))}
+        <b>${formatPct(item.probability)}</b>
+      </span>
+    `)
+    .join("");
+
+  panel.innerHTML = `
+    <article class="third-assignment-card">
+      <div>
+        <span class="label">32 强第三名落位</span>
+        <strong>${escapeHtml(formatQualifiedGroups(top.qualified_groups))} 组合最常见</strong>
+      </div>
+      <p>最佳小组第三名按 495 种组合表落位；小组第三排序缺少公平竞赛分时使用模型兜底。当前组合出现率 ${formatPct(top.probability)}。</p>
+      <div class="assignment-chip-row">${assignments}</div>
+      ${alternatives ? `<div class="assignment-alt-row"><span>其他常见组合</span>${alternatives}</div>` : ""}
+    </article>
+  `;
+}
+
 function renderKnockoutViews() {
   const prediction = state.prediction;
   const r32Grid = $("#knockoutR32Grid");
   const r16Grid = $("#knockoutR16Grid");
   const deepGrid = $("#knockoutDeepGrid");
   if (!r32Grid || !r16Grid || !deepGrid) return;
+  renderThirdPlaceAssignmentPanel();
   if (!prediction?.rows?.length) {
     r32Grid.innerHTML = `<div class="mini-empty">生成预测后显示 32 个进入 32 强概率最高的候选。</div>`;
     r16Grid.innerHTML = `<div class="mini-empty">生成预测后显示 16 个进入 16 强概率最高的候选。</div>`;

@@ -593,6 +593,10 @@ def simulate_tournament(
         stages[round_name] = next_winners
         winners = next_winners
     stages["group_rankings"] = group_rankings
+    stages["third_place_assignment"] = {
+        "qualified_groups": "".join(sorted(third_qualifier_groups)),
+        "slots": third_assignment,
+    }
     return stages
 
 

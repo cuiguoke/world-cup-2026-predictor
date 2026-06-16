@@ -18,6 +18,7 @@ from services.sources import build_factor_adjustments, enriched_factors
 from services.teams import localize_prediction, team_display_name
 from storage import app_log
 from worldcup_simulator import (
+    THIRD_PLACE_WINNER_SLOT_ORDER,
     build_elo,
     load_groups,
     load_matches,
@@ -26,6 +27,18 @@ from worldcup_simulator import (
     simulate_tournament,
     summarize_counts,
 )
+
+
+THIRD_PLACE_MATCH_BY_WINNER_SLOT = {
+    "1A": 79,
+    "1B": 85,
+    "1D": 81,
+    "1E": 74,
+    "1G": 82,
+    "1I": 77,
+    "1K": 87,
+    "1L": 80,
+}
 
 
 @dataclass(frozen=True)
@@ -133,6 +146,36 @@ def summarize_match_predictions(
     return predictions
 
 
+def summarize_third_place_assignments(
+    assignment_counts: dict[str, dict[str, object]],
+    simulations: int,
+    limit: int = 5,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for key, item in assignment_counts.items():
+        slots = dict(item.get("slots", {}))
+        assignments = []
+        for winner_slot in THIRD_PLACE_WINNER_SLOT_ORDER:
+            third_slot = str(slots.get(winner_slot, ""))
+            if not third_slot:
+                continue
+            assignments.append(
+                {
+                    "winner_slot": winner_slot,
+                    "third_slot": third_slot,
+                    "match_number": THIRD_PLACE_MATCH_BY_WINNER_SLOT.get(winner_slot),
+                }
+            )
+        rows.append(
+            {
+                "qualified_groups": key,
+                "probability": int(item.get("count", 0)) / simulations,
+                "assignments": assignments,
+            }
+        )
+    return sorted(rows, key=lambda row: row["probability"], reverse=True)[:limit]
+
+
 def run_prediction(simulations: int = 1000) -> dict[str, object]:
     started_at = datetime.now()
     app_log("prediction.start", simulations=simulations)
@@ -153,6 +196,7 @@ def run_prediction(simulations: int = 1000) -> dict[str, object]:
     group_counts: dict[str, dict[str, dict[str, int]]] = defaultdict(
         lambda: defaultdict(lambda: defaultdict(int))
     )
+    third_assignment_counts: dict[str, dict[str, object]] = {}
 
     for team in sorted({team for teams in groups.values() for team in teams}):
         counts[team]["qualified"] += 0
@@ -188,9 +232,24 @@ def run_prediction(simulations: int = 1000) -> dict[str, object]:
                     group_counts[str(group)][team]["top_two"] += 1
                 if dict(item).get("qualified"):
                     group_counts[str(group)][team]["qualified"] += 1
+        third_assignment = dict(result.get("third_place_assignment", {}))
+        third_key = str(third_assignment.get("qualified_groups", ""))
+        if third_key:
+            if third_key not in third_assignment_counts:
+                third_assignment_counts[third_key] = {
+                    "count": 0,
+                    "slots": dict(third_assignment.get("slots", {})),
+                }
+            third_assignment_counts[third_key]["count"] = int(
+                third_assignment_counts[third_key]["count"]
+            ) + 1
 
     rows = summarize_counts(counts, simulations)
     group_qualification = summarize_group_qualification(groups, group_counts, simulations)
+    third_place_assignments = summarize_third_place_assignments(
+        third_assignment_counts,
+        simulations,
+    )
     match_predictions = summarize_match_predictions(
         matches_state,
         ratings,
@@ -222,6 +281,7 @@ def run_prediction(simulations: int = 1000) -> dict[str, object]:
             "appliedFactors": applied_factors,
             "rows": rows,
             "groupQualification": group_qualification,
+            "thirdPlaceAssignments": third_place_assignments,
             "matchPredictions": match_predictions,
         }
     )

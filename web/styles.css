@@ -795,6 +795,77 @@ code {
   font-size: 16px;
 }
 
+.third-assignment-panel {
+  margin-bottom: 16px;
+}
+
+.third-assignment-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-subtle);
+}
+
+.third-assignment-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.third-assignment-card .label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.third-assignment-card strong {
+  font-size: 15px;
+}
+
+.third-assignment-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.assignment-chip-row,
+.assignment-alt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assignment-chip,
+.assignment-alt-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.assignment-chip b,
+.assignment-alt-row b {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.assignment-alt-row > span:first-child {
+  border-color: transparent;
+  background: transparent;
+  padding-left: 0;
+  font-weight: 700;
+}
+
 .stage-card-section h3 {
   margin: 0 0 12px;
   font-size: 16px;

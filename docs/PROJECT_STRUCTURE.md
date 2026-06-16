@@ -177,6 +177,7 @@ web/
 - `sample_groups_2026.json`：样例分组。
 - `team_names_zh.json`：中文队名映射。
 - `match_schedule_2026.json`：世界杯赛程、北京时间、已知比分和来源标记。
+- `third_place_assignments_2026.json`：32 强阶段 8 个最佳小组第三名的 495 种组合落位表。
 - `results_source.md`：历史数据来源说明。
 
 ### `app_data/`

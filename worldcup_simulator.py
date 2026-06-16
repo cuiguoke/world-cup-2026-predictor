@@ -26,6 +26,7 @@ from typing import Iterable
 DEFAULT_RESULTS_URL = (
     "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
 )
+THIRD_PLACE_ASSIGNMENTS_PATH = Path(__file__).resolve().parent / "data" / "third_place_assignments_2026.json"
 
 # 2026 年三个东道主。模拟世界杯正赛时给这些球队额外加成，
 # 用来近似主场、气候熟悉度、观众支持等因素。
@@ -411,7 +412,8 @@ def group_table(
 
 
 # 32 强签位结构。普通槽位如 1A 表示 A 组第一；3A/B/C/D/F
-# 表示从这些小组的第三名晋级队中选一个填入。
+# 表示该场可能接收这些小组的晋级第三名。具体落位由 FIFA 规则
+# 附录 C 的 495 种组合表决定，见 data/third_place_assignments_2026.json。
 R32_SLOTS = [
     ("2A", "2B"),
     ("1C", "2F"),
@@ -431,6 +433,8 @@ R32_SLOTS = [
     ("1K", "3D/E/I/J/L"),
 ]
 
+THIRD_PLACE_WINNER_SLOT_ORDER = ["1A", "1B", "1D", "1E", "1G", "1I", "1K", "1L"]
+
 # 后续轮次按上一轮胜者列表的下标配对。
 NEXT_ROUNDS = [
     [(0, 2), (1, 4), (3, 5), (6, 7), (10, 11), (8, 9), (13, 15), (12, 14)],
@@ -440,22 +444,82 @@ NEXT_ROUNDS = [
 ]
 
 
+def load_third_place_assignments(
+    path: Path = THIRD_PLACE_ASSIGNMENTS_PATH,
+) -> dict[str, dict[str, str]]:
+    """读取 32 强第三名组合表，返回 qualified-groups -> winner-slot -> third-slot。"""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    order = list(data.get("third_place_winner_slot_order", THIRD_PLACE_WINNER_SLOT_ORDER))
+    if order != THIRD_PLACE_WINNER_SLOT_ORDER:
+        raise ValueError("Unexpected third-place winner slot order.")
+    raw_assignments = data.get("assignments", {})
+    if not isinstance(raw_assignments, dict):
+        raise ValueError("Third-place assignments must be a mapping.")
+
+    assignments: dict[str, dict[str, str]] = {}
+    for key, slots in raw_assignments.items():
+        if not isinstance(key, str) or len(key) != 8:
+            raise ValueError(f"Invalid third-place combination key: {key!r}")
+        if not isinstance(slots, list) or len(slots) != len(order):
+            raise ValueError(f"Invalid third-place assignment for {key}.")
+        assigned = {winner_slot: str(third_slot) for winner_slot, third_slot in zip(order, slots)}
+        if sorted(slot[1] for slot in assigned.values()) != sorted(key):
+            raise ValueError(f"Third-place assignment groups do not match {key}.")
+        assignments[key] = assigned
+    return assignments
+
+
+THIRD_PLACE_ASSIGNMENTS = load_third_place_assignments()
+
+
+def rank_third_placed_teams(
+    third_rows: list[tuple[str, dict[str, object]]],
+) -> list[tuple[str, dict[str, object]]]:
+    """按最佳小组第三规则排序；缺少公平竞赛分时用 rating/jitter 兜底。"""
+    return sorted(
+        third_rows,
+        key=lambda item: (
+            item[1]["pts"],
+            item[1]["gd"],
+            item[1]["gf"],
+            item[1]["rating"],
+            item[1]["jitter"],
+        ),
+        reverse=True,
+    )
+
+
+def third_place_assignment_for_groups(qualified_groups: set[str]) -> dict[str, str]:
+    """根据 8 个晋级第三名小组，查表得到各组头名第三名对手槽位。"""
+    key = "".join(sorted(qualified_groups))
+    try:
+        return THIRD_PLACE_ASSIGNMENTS[key]
+    except KeyError as exc:
+        raise ValueError(f"No third-place assignment for groups {key}.") from exc
+
+
 def resolve_slot(
     slot: str,
     positions: dict[str, str],
     thirds: dict[str, str],
-    used_thirds: set[str],
+    third_assignment: dict[str, str],
+    winner_slot: str | None = None,
 ) -> str:
     """把签位字符串解析成具体球队名称。"""
     if not slot.startswith("3"):
         return positions[slot]
-    allowed = slot[1:].split("/")
-    available = [g for g in allowed if g in thirds and g not in used_thirds]
-    if not available:
-        available = [g for g in thirds if g not in used_thirds]
-    chosen_group = available[0]
-    used_thirds.add(chosen_group)
-    return thirds[chosen_group]
+    if winner_slot is None:
+        raise ValueError(f"Third-place slot {slot} requires a winner slot context.")
+    assigned_slot = third_assignment.get(winner_slot)
+    if assigned_slot is None:
+        raise ValueError(f"No third-place assignment for winner slot {winner_slot}.")
+    assigned_group = assigned_slot[1:]
+    allowed = set(slot[1:].split("/"))
+    if assigned_group not in allowed:
+        raise ValueError(
+            f"Assigned third-place group {assigned_group} is not allowed for {winner_slot} vs {slot}."
+        )
+    return thirds[assigned_group]
 
 
 def simulate_tournament(
@@ -487,19 +551,11 @@ def simulate_tournament(
         positions[f"2{group}"] = str(table[1]["team"])
         third_rows.append((group, table[2]))
 
-    third_rows.sort(
-        key=lambda item: (
-            item[1]["pts"],
-            item[1]["gd"],
-            item[1]["gf"],
-            item[1]["rating"],
-            item[1]["jitter"],
-        ),
-        reverse=True,
-    )
+    third_rows = rank_third_placed_teams(third_rows)
     # 12 个小组第三中，成绩最好的 8 支进入 32 强。
     thirds = {group: str(row["team"]) for group, row in third_rows[:8]}
     third_qualifier_groups = set(thirds)
+    third_assignment = third_place_assignment_for_groups(third_qualifier_groups)
 
     group_rankings = {
         group: [
@@ -513,11 +569,10 @@ def simulate_tournament(
         for group, table in group_tables.items()
     }
 
-    used_thirds: set[str] = set()
     r32_matches = [
         (
-            resolve_slot(left, positions, thirds, used_thirds),
-            resolve_slot(right, positions, thirds, used_thirds),
+            resolve_slot(left, positions, thirds, third_assignment, left),
+            resolve_slot(right, positions, thirds, third_assignment, left),
         )
         for left, right in R32_SLOTS
     ]

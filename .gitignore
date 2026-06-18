@@ -2,6 +2,13 @@ __pycache__/
 *.py[cod]
 .DS_Store
 
+# Test, coverage, and local smoke-test output.
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+outputs/
+
 # Local runtime state. May contain user-entered scores, sources, reports, or API-derived data.
 app_data/
 
